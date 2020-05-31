@@ -14,10 +14,9 @@ class SimAnneal(object):
         self.stopping_temperature = 1e-8 if stopping_temperature == -1 else stopping_temperature
         self.stopping_iter = 100000 if stopping_iter == -1 else stopping_iter
         self.iteration = 1
-        self.best_solution = None
+        self.route = None
         self.best_fitness = float("Inf")
         self.progress = []
-        self.route = []
         self.cur_cost = None
 
     def greedy_solution(self):
@@ -41,7 +40,7 @@ class SimAnneal(object):
         if guess_cost < self.cur_cost:
             self.cur_cost, self.route = guess_cost, guess
             if guess_cost < self.best_fitness:
-                self.best_fitness, self.best_solution = guess_cost, guess
+                self.best_fitness, self.route = guess_cost, guess
         else:
             if random.random() < self.accept_probability(guess_cost):
                 self.cur_cost, self.route = guess_cost, guess
@@ -49,7 +48,7 @@ class SimAnneal(object):
     def run(self):
         self.route, self.cur_cost = self.greedy_solution()
         while self.temperature >= self.stopping_temperature and self.iteration < self.stopping_iter:
-            guess = self.route
+            guess = list(self.route)
             left_index = random.randint(2, self.num_cities - 1)
             right_index = random.randint(0, self.num_cities - left_index)
             guess[right_index: (right_index + left_index)] = reversed(guess[right_index: (right_index + left_index)])
@@ -61,7 +60,7 @@ class SimAnneal(object):
         print("Best fitness obtained: ", self.best_fitness)
 
     def visualize_routes(self):
-        visualize_tsp('simulated annealing', self.best_solution)
+        visualize_tsp('simulated annealing', self.route)
 
     def plot_learning(self):
         plt.plot([i for i in range(len(self.progress))], self.progress)

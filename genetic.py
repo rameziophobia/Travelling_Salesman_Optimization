@@ -1,3 +1,5 @@
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 import operator
@@ -44,128 +46,108 @@ def createRoute(cityList):
 
 
 def initial_population(popSize, cityList):
-    population = []
-
-    for _ in range(0, popSize):
-        population.append(createRoute(cityList))
-    return population
-
-
-def rankRoutes(population):
-    fitnessResults = {}
-    for i in range(0, len(population)):
-        fitnessResults[i] = Fitness(population[i]).path_fitness()
-    return sorted(fitnessResults.items(), key=operator.itemgetter(1), reverse=True)
+    random_population = [createRoute(cityList) for _ in range(popSize)]
+    # greedy_population = [greedy_route(start_index % len(cityList), cityList)
+    #                      for start_index in range(math.ceil(popSize // 10))]
+    return [*random_population]
 
 
-def selection(popRanked, eliteSize):
+def greedy_route(start_index, cities):
+    unvisited = cities[:]
+    del unvisited[start_index]
+    route = [cities[start_index]]
+    while len(unvisited):
+        index, nearest_city = min(enumerate(unvisited), key=lambda item: item[1].distance(route[-1]))
+        route.append(nearest_city)
+        del unvisited[index]
+    return route
+
+
+def rank_chromosomes(population):
+    fitness = [(i, Fitness(population[i]).path_fitness()) for i in range(len(population))]
+    return sorted(fitness, key=lambda f: f[1], reverse=True)
+
+
+def selection(ranked_population, num_elites):
     selectionResults = []
-    df = pd.DataFrame(np.array(popRanked), columns=["Index", "Fitness"])
+    df = pd.DataFrame(np.array(ranked_population), columns=["Index", "Fitness"])
     df['cum_sum'] = df.Fitness.cumsum()
     df['cum_perc'] = 100 * df.cum_sum / df.Fitness.sum()
 
-    for i in range(0, eliteSize):
-        selectionResults.append(popRanked[i][0])
-    for i in range(0, len(popRanked) - eliteSize):
+    for i in range(0, num_elites):
+        selectionResults.append(ranked_population[i][0])
+    for i in range(0, len(ranked_population) - num_elites):
         pick = 100 * random.random()
-        for i in range(0, len(popRanked)):
+        for i in range(0, len(ranked_population)):
             if pick <= df.iat[i, 3]:
-                selectionResults.append(popRanked[i][0])
+                selectionResults.append(ranked_population[i][0])
                 break
     return selectionResults
 
 
-def matingPool(population, selectionResults):
+def mating_pool(population, selection_results):
     matingpool = []
-    for i in range(0, len(selectionResults)):
-        index = selectionResults[i]
+    for i in range(0, len(selection_results)):
+        index = selection_results[i]
         matingpool.append(population[index])
     return matingpool
 
 
 def breed(parent1, parent2):
-    childP1 = []
-
-    geneA = int(random.random() * len(parent1))
-    geneB = int(random.random() * len(parent1))
-
-    startGene = min(geneA, geneB)
-    endGene = max(geneA, geneB)
-
-    for i in range(startGene, endGene):
-        childP1.append(parent1[i])
-
-    childP2 = [item for item in parent2 if item not in childP1]
-
-    child = childP1 + childP2
+    gene_1 = random.randint(0, len(parent1))
+    gene_2 = random.randint(0, len(parent1))
+    gene_1 = min(gene_1, gene_2)
+    gene_2 = max(gene_1, gene_2)
+    child = [parent1[i] for i in range(gene_1, gene_2)]
+    child.extend([gene for gene in parent2 if gene not in child])
     return child
 
 
-def breedPopulation(matingpool, eliteSize):
-    children = []
-    length = len(matingpool) - eliteSize
-    pool = random.sample(matingpool, len(matingpool))
-
-    for i in range(0, eliteSize):
-        children.append(matingpool[i])
-
-    for i in range(0, length):
-        child = breed(pool[i], pool[len(matingpool) - i - 1])
+def breed_population(mating_pool, num_elites):
+    children = mating_pool[:num_elites]
+    for i in range(0, len(mating_pool) - num_elites):
+        child = breed(mating_pool[i], mating_pool[(i + random.randint(1, num_elites)) % (len(mating_pool) - num_elites)])
         children.append(child)
     return children
 
 
-def mutate(individual, mutationRate):
-    for swapped in range(len(individual)):
-        if (random.random() < mutationRate):
-            swapWith = int(random.random() * len(individual))
-
-            city1 = individual[swapped]
-            city2 = individual[swapWith]
-
-            individual[swapped] = city2
-            individual[swapWith] = city1
+def mutate(individual, mutation_rate):
+    for index, city in enumerate(individual):
+        if random.random() < mutation_rate:
+            random_index = random.randint(0, len(individual) - 1)
+            individual[index], individual[random_index] = individual[random_index], individual[index]
     return individual
 
 
-def mutatePopulation(population, mutationRate):
-    mutatedPop = []
-
-    for ind in range(0, len(population)):
-        mutatedInd = mutate(population[ind], mutationRate)
-        mutatedPop.append(mutatedInd)
-    return mutatedPop
-
-
-def nextGeneration(currentGen, eliteSize, mutationRate):
-    popRanked = rankRoutes(currentGen)
-    selectionResults = selection(popRanked, eliteSize)
-    matingpool = matingPool(currentGen, selectionResults)
-    children = breedPopulation(matingpool, eliteSize)
-    nextGeneration = mutatePopulation(children, mutationRate)
+def next_generation(this_generation, elites_num, mutation_rate):
+    pop_ranked = rank_chromosomes(this_generation)
+    selection_results = selection(pop_ranked, elites_num)
+    matingpool = mating_pool(this_generation, selection_results)
+    children = breed_population(matingpool, elites_num)
+    nextGeneration = [mutate(chromosome, mutation_rate) for chromosome in children]
     return nextGeneration
 
 
-cityList = [City(x=int(random.random() * 200), y=int(random.random() * 200)) for _ in range(64)]
-cityList = []
-with open('cities_256.data', 'r') as handle:
+cities = [City(x=int(random.random() * 200), y=int(random.random() * 200)) for _ in range(64)]
+cities = []
+with open('cities_64.data', 'r') as handle:
     lines = handle.readlines()
     for line in lines:
         x, y = map(int, line.split())
-        cityList.append(City(x, y))
+        cities.append(City(x, y))
 
 
 def geneticAlgorithmPlot(population, popSize, eliteSize, mutationRate, generations):
     pop = initial_population(popSize, population)
     progress = []
-    progress.append(1 / rankRoutes(pop)[0][1])
+    progress.append(1 / rank_chromosomes(pop)[0][1])
 
     for i in range(0, generations):
-        pop = nextGeneration(pop, eliteSize, mutationRate)
-        progress.append(1 / rankRoutes(pop)[0][1])
+        pop = next_generation(pop, eliteSize, mutationRate)
+        progress.append(1 / rank_chromosomes(pop)[0][1])
 
-    print("Final distance: " + str(1 / rankRoutes(pop)[0][1]))
-    bestRouteIndex = rankRoutes(pop)[0][0]
+    print("Final distance: " + str(1 / rank_chromosomes(pop)[0][1]))
+    bestRouteIndex = rank_chromosomes(pop)[0][0]
     bestRoute = pop[bestRouteIndex]
 
     plt.figure(0)
@@ -188,4 +170,4 @@ def geneticAlgorithmPlot(population, popSize, eliteSize, mutationRate, generatio
     return bestRoute
 
 
-geneticAlgorithmPlot(population=cityList, popSize=100, eliteSize=20, mutationRate=0.005, generations=500)
+geneticAlgorithmPlot(population=cities, popSize=110, eliteSize=20, mutationRate=0.005, generations=1000)

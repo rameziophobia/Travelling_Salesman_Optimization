@@ -14,7 +14,7 @@ class City:
         self.y = y
 
     def distance(self, city):
-        return np.hypot(abs(self.x - city.x), abs(self.y - city.y))
+        return np.hypot(self.x - city.x, self.y - city.y)
 
     def __repr__(self):
         return f"({self.x}, {self.y})"
@@ -40,16 +40,133 @@ class Fitness:
         return self.fitness
 
 
-def createRoute(cityList):
-    route = random.sample(cityList, len(cityList))
-    return route
+class GeneticAlgorithm:
+    def __init__(self, iterations, population_size, cities, elites_num, mutation_rate,
+                 greedy_seed=0, roulette_selection=True, plot_progress=True):
+        self.plot_progress = plot_progress
+        self.roulette_selection = roulette_selection
+        self.progress = []
+        self.mutation_rate = mutation_rate
+        self.cities = cities
+        self.elites_num = elites_num
+        self.iterations = iterations
+        self.population_size = population_size
+        self.greedy_seed = greedy_seed
 
+        self.population = self.initial_population()
+        self.ranked_population = None
 
-def initial_population(popSize, cityList):
-    random_population = [createRoute(cityList) for _ in range(popSize)]
-    # greedy_population = [greedy_route(start_index % len(cityList), cityList)
-    #                      for start_index in range(math.ceil(popSize // 10))]
-    return [*random_population]
+    def best_chromosome(self):
+        return self.ranked_population[0][0]
+
+    def best_distance(self):
+        return 1 / self.ranked_population[0][1]
+
+    def random_route(self):
+        return random.sample(self.cities, len(self.cities))
+
+    def initial_population(self):
+        p1 = [self.random_route() for _ in range(self.population_size - self.greedy_seed)]
+        greedy_population = [greedy_route(start_index % len(self.cities), self.cities)
+                             for start_index in range(self.greedy_seed)]
+        return [*p1, * greedy_population]
+
+    def rank_population(self):
+        fitness = [(chromosome, Fitness(chromosome).path_fitness()) for chromosome in self.population]
+        self.ranked_population = sorted(fitness, key=lambda f: f[1], reverse=True)
+
+    def selection(self):
+        selections = [self.ranked_population[i][0] for i in range(self.elites_num)]
+        if self.roulette_selection:
+            df = pd.DataFrame(np.array(self.ranked_population), columns=["index", "fitness"])
+            df['cum_sum'] = df.fitness.cumsum()
+            df['cum_perc'] = 100 * df.cum_sum / df.fitness.sum()
+
+            for _ in range(0, self.population_size - self.elites_num):
+                pick = 100 * random.random()
+                for i in range(0, len(self.ranked_population)):
+                    if pick <= df.iat[i, 3]:
+                        selections.append(self.ranked_population[i][0])
+                        break
+        else:
+            for _ in range(0, self.population_size - self.elites_num):
+                pick = random.randint(0, self.population_size - 1)
+                selections.append(self.ranked_population[pick][0])
+        self.population = selections
+
+    @staticmethod
+    def produce_child(parent1, parent2):
+        gene_1 = random.randint(0, len(parent1))
+        gene_2 = random.randint(0, len(parent1))
+        gene_1 = min(gene_1, gene_2)
+        gene_2 = max(gene_1, gene_2)
+        child = [parent1[i] for i in range(gene_1, gene_2)]
+        child.extend([gene for gene in parent2 if gene not in child])
+        return child
+
+    def generate_population(self):
+        length = len(self.population) - self.elites_num
+        children = self.population[:self.elites_num]
+        for i in range(0, length):
+            child = self.produce_child(self.population[i],
+                                       self.population[(i + random.randint(1, self.elites_num)) % length])
+            children.append(child)
+        return children
+
+    def mutate(self, individual):
+        for index, city in enumerate(individual):
+            if random.random() < self.mutation_rate:
+                sample_size = min(max(3, self.population_size // 5), 100)
+                random_sample = random.sample(range(len(individual)), sample_size)
+                sorted_sample = sorted(random_sample,
+                                       key=lambda c_i: individual[c_i].distance(individual[index - 1]))
+                random_close_index = random.choice(sorted_sample[:sample_size // 3])
+                individual[index], individual[random_close_index] = individual[random_close_index], individual[index]
+        return individual
+
+    def next_generation(self):
+        self.rank_population()
+        self.selection()
+        self.population = self.generate_population()
+        self.population[self.elites_num:] = [self.mutate(chromosome)
+                                             for chromosome in self.population[self.elites_num:]]
+
+    def run(self):
+        if self.plot_progress:
+            plt.ion()
+        for iter in range(0, self.iterations):
+            self.next_generation()
+            self.progress.append(self.best_distance())
+            # if i > self.iterations / 2:
+            #     self.population[self.elites_num // 2:] = self.initial_population()[self.elites_num // 2:]
+            #     self.roulette_selection = False
+            if self.plot_progress and iter % 20 == 0:
+                self.plot()
+
+    def plot(self):
+        print(self.best_distance())
+        fig = plt.figure(0)
+        plt.plot(self.progress, 'g')
+        fig.suptitle('genetic algorithm generations')
+        plt.ylabel('Distance')
+        plt.xlabel('Generation')
+
+        x_list, y_list = [], []
+        for city in self.best_chromosome():
+            x_list.append(city.x)
+            y_list.append(city.y)
+        x_list.append(self.best_chromosome()[0].x)
+        y_list.append(self.best_chromosome()[0].y)
+        fig = plt.figure(1)
+        fig.clear()
+        fig.suptitle('genetic algorithm TSP')
+        plt.plot(x_list, y_list, 'ro')
+        plt.plot(x_list, y_list, 'g')
+
+        if self.plot_progress:
+            plt.draw()
+            plt.pause(0.01)
+        plt.show()
 
 
 def greedy_route(start_index, cities):
@@ -63,111 +180,24 @@ def greedy_route(start_index, cities):
     return route
 
 
-def rank_chromosomes(population):
-    fitness = [(i, Fitness(population[i]).path_fitness()) for i in range(len(population))]
-    return sorted(fitness, key=lambda f: f[1], reverse=True)
-
-
-def selection(ranked_population, num_elites):
-    selectionResults = []
-    df = pd.DataFrame(np.array(ranked_population), columns=["Index", "Fitness"])
-    df['cum_sum'] = df.Fitness.cumsum()
-    df['cum_perc'] = 100 * df.cum_sum / df.Fitness.sum()
-
-    for i in range(0, num_elites):
-        selectionResults.append(ranked_population[i][0])
-    for i in range(0, len(ranked_population) - num_elites):
-        pick = 100 * random.random()
-        for i in range(0, len(ranked_population)):
-            if pick <= df.iat[i, 3]:
-                selectionResults.append(ranked_population[i][0])
-                break
-    return selectionResults
-
-
-def mating_pool(population, selection_results):
-    matingpool = []
-    for i in range(0, len(selection_results)):
-        index = selection_results[i]
-        matingpool.append(population[index])
-    return matingpool
-
-
-def breed(parent1, parent2):
-    gene_1 = random.randint(0, len(parent1))
-    gene_2 = random.randint(0, len(parent1))
-    gene_1 = min(gene_1, gene_2)
-    gene_2 = max(gene_1, gene_2)
-    child = [parent1[i] for i in range(gene_1, gene_2)]
-    child.extend([gene for gene in parent2 if gene not in child])
-    return child
-
-
-def breed_population(mating_pool, num_elites):
-    children = mating_pool[:num_elites]
-    for i in range(0, len(mating_pool) - num_elites):
-        child = breed(mating_pool[i], mating_pool[(i + random.randint(1, num_elites)) % (len(mating_pool) - num_elites)])
-        children.append(child)
-    return children
-
-
-def mutate(individual, mutation_rate):
-    for index, city in enumerate(individual):
-        if random.random() < mutation_rate:
-            random_index = random.randint(0, len(individual) - 1)
-            individual[index], individual[random_index] = individual[random_index], individual[index]
-    return individual
-
-
-def next_generation(this_generation, elites_num, mutation_rate):
-    pop_ranked = rank_chromosomes(this_generation)
-    selection_results = selection(pop_ranked, elites_num)
-    matingpool = mating_pool(this_generation, selection_results)
-    children = breed_population(matingpool, elites_num)
-    nextGeneration = [mutate(chromosome, mutation_rate) for chromosome in children]
-    return nextGeneration
-
-
-cities = [City(x=int(random.random() * 200), y=int(random.random() * 200)) for _ in range(64)]
+# cities = [City(x=int(random.random() * 200), y=int(random.random() * 200)) for _ in range(64)]
 cities = []
-with open('cities_64.data', 'r') as handle:
+with open('cities_256.data', 'r') as handle:
     lines = handle.readlines()
     for line in lines:
         x, y = map(int, line.split())
         cities.append(City(x, y))
 
 
-def geneticAlgorithmPlot(population, popSize, eliteSize, mutationRate, generations):
-    pop = initial_population(popSize, population)
-    progress = []
-    progress.append(1 / rank_chromosomes(pop)[0][1])
-
-    for i in range(0, generations):
-        pop = next_generation(pop, eliteSize, mutationRate)
-        progress.append(1 / rank_chromosomes(pop)[0][1])
-
-    print("Final distance: " + str(1 / rank_chromosomes(pop)[0][1]))
-    bestRouteIndex = rank_chromosomes(pop)[0][0]
-    bestRoute = pop[bestRouteIndex]
-
-    plt.figure(0)
-    plt.plot(progress)
-    plt.ylabel('Distance')
-    plt.xlabel('Generation')
-
-    x_list, y_list = [], []
-    for city in bestRoute:
-        x_list.append(city.x)
-        y_list.append(city.y)
-    x_list.append(bestRoute[0].x)
-    y_list.append(bestRoute[0].y)
-    fig = plt.figure(1)
-    fig.suptitle('genetic algorithm TSP')
-    plt.plot(x_list, y_list, 'ro')
-    plt.plot(x_list, y_list)
-
-    plt.show()
-    return bestRoute
-
-
-geneticAlgorithmPlot(population=cities, popSize=110, eliteSize=20, mutationRate=0.005, generations=1000)
+if __name__ == '__main__':
+    x = 0
+    for i in range(10):
+        genetic_algorithm = GeneticAlgorithm(cities=cities, iterations=1500, population_size=100,
+                                             elites_num=20, mutation_rate=0.008, greedy_seed=1,
+                                             roulette_selection=True, plot_progress=True)
+        genetic_algorithm.run()
+        print(genetic_algorithm.best_distance())
+        x += genetic_algorithm.best_distance()
+        genetic_algorithm.plot()
+        plt.show(block=True)
+    print(x)

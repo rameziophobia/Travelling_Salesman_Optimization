@@ -9,4 +9,8 @@ Solving the Travelling Salesman Problem in Python
 * __Greedy__
 * __Brute Force__
 
-When the solution is found it is plotted using Matplotlib and for some algorithms you can see the intermediate results
+When the solution is found it is plotted using Matplotlib and for some algorithms you can see the intermediate results  
+
+### Example visualizations
+#### Divide and Conquer
+![Divide and Conquer](https://s7.gifyu.com/images/daqTSP2.gif "Divide and Conquer")

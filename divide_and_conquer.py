@@ -1,19 +1,6 @@
-import random
 import matplotlib.pyplot as plt
 import math
-import numpy as np
-
-
-class City:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def distance(self, city):
-        return np.hypot(self.x - city.x, self.y - city.y)
-
-    def __repr__(self):
-        return f"({self.x}, {self.y})"
+from util import City, read_cities, write_cities_and_return_them, generate_cities
 
 
 class DivideConquer:
@@ -103,17 +90,8 @@ class DivideConquer:
 
 if __name__ == "__main__":
     for _ in range(1):
-        cities = []
-        with open('cities_64.data', 'r') as handle:
-            lines = handle.readlines()
-            for line in lines:
-                x, y = map(int, line.split())
-                cities.append(City(x, y))
-        # cities = [City(x=int(random.random() * 100), y=int(random.random() * 100)) for _ in range(64)]
+        cities = read_cities(64)
         divideConquer = DivideConquer(cities)
-        # with open('cities_64.data', 'w+') as handle:
-        #     for city in cities:
-        #         handle.write(f'{city.x} {city.y}\n')
         print(divideConquer.run())
         print(divideConquer.route)
         x = []
@@ -129,9 +107,3 @@ if __name__ == "__main__":
 
         plt.plot(x, y, 'ro')
         plt.show(block=True)
-    # divideConquer.shows_particles()
-    # print(f'gbest: {pso.gbest.pbest}\t| cost: {pso.gbest.pbest_cost}')
-    # plt.plot(pso.gcost_iter)
-    # plt.ylabel('Distance')
-    # plt.xlabel('Generation')
-    # plt.show()

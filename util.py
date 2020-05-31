@@ -34,7 +34,7 @@ def write_cities_and_return_them(size):
 
 
 def generate_cities(size):
-    return [City(x=int(random.random() * 200), y=int(random.random() * 200)) for _ in range(size)]
+    return [City(x=int(random.random() * 1000), y=int(random.random() * 1000)) for _ in range(size)]
 
 
 def path_cost(route):

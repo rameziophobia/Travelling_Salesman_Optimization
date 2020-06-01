@@ -27,7 +27,7 @@ class Particle:
     def path_cost(self):
         distance = 0
         for index, city in enumerate(self.route):
-            distance += city.distance(self.route[(index + 1) % len(self.route)])
+            distance += city.distance(self.route[index - 1])
         return distance
 
 
@@ -50,9 +50,10 @@ class PSO:
         return random.sample(self.cities, len(self.cities))
 
     def initial_population(self):
-        random_population = [self.random_route() for _ in range(self.population_size)]
+        random_population = [self.random_route() for _ in range(self.population_size - 1)]
         greedy_population = [self.greedy_route(0)]
         return [*random_population, *greedy_population]
+        # return [*random_population]
 
     def greedy_route(self, start_index):
         unvisited = self.cities[:]
@@ -64,21 +65,12 @@ class PSO:
             del unvisited[index]
         return route
 
-    def shows_particles(self):
-
-        print('Showing particles...\n')
-        for particle in self.particles:
-            print(f'pbest: {particle.pbest}\t|\tcost pbest: {particle.pbest_cost}\t|'
-                  f'\tcurrent solution: {particle.route}\t|'
-                  f'\tcost current solution: {particle.current_cost}')
-        print()
-
     def run(self):
         self.gbest = min(self.particles, key=lambda p: p.pbest_cost)
         print(f"initial cost is {self.gbest.pbest_cost}")
         plt.ion()
         plt.draw()
-        plt.show()
+        # plt.show()
         for t in range(self.iterations):
             self.gbest = min(self.particles, key=lambda p: p.pbest_cost)
             if t % 20 == 0:
@@ -141,7 +133,6 @@ if __name__ == "__main__":
     cities = read_cities(64)
     pso = PSO(iterations=1200, population_size=300, pbest_probability=0.9, gbest_probability=0.02, cities=cities)
     pso.run()
-    pso.shows_particles()
     print(f'cost: {pso.gbest.pbest_cost}\t| gbest: {pso.gbest.pbest}')
 
     x_list, y_list = [], []

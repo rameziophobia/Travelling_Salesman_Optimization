@@ -56,10 +56,10 @@ class DivideConquer:
 
     def merge(self, graph_1, graph_2):
         if isinstance(graph_1, City):
-            if graph_1.distance(graph_2[0]) < graph_1.distance(graph_2[1]):
-                graph_2.append((graph_1, graph_2[0]))
-            else:
-                graph_2.append((graph_1, graph_2[1]))
+            # if graph_1.distance(graph_2[0][0]) < graph_1.distance(graph_2[0][1]):
+            graph_2.append((graph_1, graph_2[0][0]))
+            # else:
+            graph_2.append((graph_1, graph_2[0][1]))
             return graph_2
         min_cost = math.inf
         for edge_1_index, (city_00, city_01) in enumerate(graph_1):
@@ -82,6 +82,8 @@ class DivideConquer:
                     old_edge_2_index = edge_2_index
         if len(graph_1) + len(graph_2) > 4:
             del graph_1[old_edge_1_index]
+            del graph_2[old_edge_2_index]
+        elif len(graph_1) + len(graph_2) == 4:
             del graph_2[old_edge_2_index]
         graph_1.extend([min_edge_1, min_edge_2])
         graph_1.extend(graph_2)

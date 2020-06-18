@@ -89,8 +89,7 @@ class GeneticAlgorithm:
     def produce_child(parent1, parent2):
         gene_1 = random.randint(0, len(parent1))
         gene_2 = random.randint(0, len(parent1))
-        gene_1 = min(gene_1, gene_2)
-        gene_2 = max(gene_1, gene_2)
+        gene_1, gene_2 = min(gene_1, gene_2), max(gene_1, gene_2)
         child = [parent1[i] for i in range(gene_1, gene_2)]
         child.extend([gene for gene in parent2 if gene not in child])
         return child
@@ -180,16 +179,6 @@ if __name__ == '__main__':
     x = 0
     # for i in range(10):
     cities = read_cities(64)
-    # cc = [(int(random.random() * 1000), int(random.random() * 1000)) for _ in range(16)]
-    # cities = [City(x=x, y=y) for (x, y) in cc]
-    # lilwel = [[] for _ in range(len(cc))]
-    # for index, city in enumerate(cc):
-    #     for city_2 in cc:
-    #         if city_2[0] == city[0] and city_2[1] == city[1]:
-    #             lilwel[index].append(sys.maxsize)
-    #         else:
-    #             lilwel[index].append(math.hypot(city_2[0] - city[0], city_2[1] - city[0]))
-    # print(lilwel)
     genetic_algorithm = GeneticAlgorithm(cities=cities, iterations=1500, population_size=100,
                                          elites_num=20, mutation_rate=0.008, greedy_seed=1,
                                          roulette_selection=True, plot_progress=True)

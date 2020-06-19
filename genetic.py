@@ -7,8 +7,6 @@ import random
 from util import City, read_cities, write_cities_and_return_them, generate_cities
 
 
-
-
 class Fitness:
     def __init__(self, route):
         self.route = route
@@ -106,8 +104,6 @@ class GeneticAlgorithm:
 
     def mutate(self, individual):
         for index, city in enumerate(individual):
-            # mutation_rate = self.mutation_rate * individual[index - 1].distance(city) / self.average_path_cost
-            # if individual[index - 1].distance(city) > self.average_path_cost *
             if random.random() < max(0, self.mutation_rate):
                 sample_size = min(min(max(3, self.population_size // 5), 100), len(individual))
                 random_sample = random.sample(range(len(individual)), sample_size)
@@ -131,9 +127,6 @@ class GeneticAlgorithm:
         for ind in range(0, self.iterations):
             self.next_generation()
             self.progress.append(self.best_distance())
-            # if i > self.iterations / 2:
-            #     self.population[self.elites_num // 2:] = self.initial_population()[self.elites_num // 2:]
-            #     self.roulette_selection = False
             if self.plot_progress and ind % 10 == 0:
                 self.plot()
             elif not self.plot_progress and ind % 10 == 0:
@@ -177,25 +170,11 @@ def greedy_route(start_index, cities):
 
 
 if __name__ == '__main__':
-    x = 0
-    # for i in range(10):
     cities = read_cities(64)
-    # cc = [(int(random.random() * 1000), int(random.random() * 1000)) for _ in range(16)]
-    # cities = [City(x=x, y=y) for (x, y) in cc]
-    # lilwel = [[] for _ in range(len(cc))]
-    # for index, city in enumerate(cc):
-    #     for city_2 in cc:
-    #         if city_2[0] == city[0] and city_2[1] == city[1]:
-    #             lilwel[index].append(sys.maxsize)
-    #         else:
-    #             lilwel[index].append(math.hypot(city_2[0] - city[0], city_2[1] - city[0]))
-    # print(lilwel)
-    genetic_algorithm = GeneticAlgorithm(cities=cities, iterations=1500, population_size=100,
+    genetic_algorithm = GeneticAlgorithm(cities=cities, iterations=1200, population_size=100,
                                          elites_num=20, mutation_rate=0.008, greedy_seed=1,
                                          roulette_selection=True, plot_progress=True)
     genetic_algorithm.run()
     print(genetic_algorithm.best_distance())
-    x += genetic_algorithm.best_distance()
     genetic_algorithm.plot()
     plt.show(block=True)
-    # print(x)

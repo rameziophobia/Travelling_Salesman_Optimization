@@ -1,4 +1,4 @@
-import numpy as np
+import math
 import random
 import matplotlib.pyplot as plt
 
@@ -9,7 +9,7 @@ class City:
         self.y = y
 
     def distance(self, city):
-        return np.hypot(self.x - city.x, self.y - city.y)
+        return math.hypot(self.x - city.x, self.y - city.y)
 
     def __repr__(self):
         return f"({self.x}, {self.y})"
@@ -38,10 +38,7 @@ def generate_cities(size):
 
 
 def path_cost(route):
-    distance = 0
-    for index, city in enumerate(route):
-        distance += city.distance(route[(index + 1) % len(route)])
-    return distance
+    return sum([city.distance(route[index - 1]) for index, city in enumerate(route)])
 
 
 def visualize_tsp(title, cities):

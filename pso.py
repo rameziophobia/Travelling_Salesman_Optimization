@@ -1,7 +1,7 @@
 import random
 import math
 import matplotlib.pyplot as plt
-from util import City, read_cities, write_cities_and_return_them, generate_cities
+from util import City, read_cities, write_cities_and_return_them, generate_cities, path_cost
 
 
 class Particle:
@@ -10,9 +10,6 @@ class Particle:
         self.pbest = route
         self.current_cost = cost if cost else self.path_cost()
         self.pbest_cost = cost if cost else self.path_cost()
-
-        # velocity of a particle is a sequence of 4-tuple
-        # (1, 2, 1, 'gbest_probability') means switch city 1 with city 2 and compare with gbest_probability probability
         self.velocity = []
 
     def clear_velocity(self):
@@ -25,10 +22,7 @@ class Particle:
             self.pbest_cost = self.current_cost
 
     def path_cost(self):
-        distance = 0
-        for index, city in enumerate(self.route):
-            distance += city.distance(self.route[index - 1])
-        return distance
+        return path_cost(self.route)
 
 
 class PSO:
@@ -70,7 +64,6 @@ class PSO:
         print(f"initial cost is {self.gbest.pbest_cost}")
         plt.ion()
         plt.draw()
-        # plt.show()
         for t in range(self.iterations):
             self.gbest = min(self.particles, key=lambda p: p.pbest_cost)
             if t % 20 == 0:
@@ -95,9 +88,6 @@ class PSO:
                 plt.draw()
                 plt.pause(.001)
             self.gcost_iter.append(self.gbest.pbest_cost)
-            # average_last_100_iter = sum(self.gcost_iter[-100:]) / len(self.gcost_iter[-100:])
-            # if abs(average_last_100_iter - self.gbest.pbest_cost) < 1 and t > self.iterations / 10:
-            #     break
 
             for particle in self.particles:
                 particle.clear_velocity()

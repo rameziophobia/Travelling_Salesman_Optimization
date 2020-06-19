@@ -21,7 +21,7 @@ def solve_tsp_dynamic(cities):
 
 if __name__ == "__main__":
 
-    cities = read_cities(8)
+    cities = read_cities(16)
     g = solve_tsp_dynamic(cities)
     sol = [cities[gi] for gi in g]
     print(path_cost(sol))

@@ -56,9 +56,7 @@ class DivideConquer:
 
     def merge(self, graph_1, graph_2):
         if isinstance(graph_1, City):
-            # if graph_1.distance(graph_2[0][0]) < graph_1.distance(graph_2[0][1]):
             graph_2.append((graph_1, graph_2[0][0]))
-            # else:
             graph_2.append((graph_1, graph_2[0][1]))
             return graph_2
         min_cost = math.inf

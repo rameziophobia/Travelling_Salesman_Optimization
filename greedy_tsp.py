@@ -1,12 +1,5 @@
 import matplotlib.pyplot as plt
-from util import City, read_cities, write_cities_and_return_them, generate_cities
-
-
-def path_cost(route):
-    distance = 0
-    for index, city in enumerate(route):
-        distance += city.distance(route[(index + 1) % len(route)])
-    return distance
+from util import City, read_cities, write_cities_and_return_them, generate_cities, path_cost
 
 
 class Greedy:
@@ -35,7 +28,7 @@ class Greedy:
         plt.plot([x1, x2], [y1, y2], 'ro')
         plt.plot([x1, x2], [y1, y2], 'g')
         plt.draw()
-        plt.pause(0.3)
+        plt.pause(0.07)
         plt.show(block=block)
 
     def init_plot(self):

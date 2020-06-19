@@ -60,18 +60,19 @@ class SimAnneal(object):
         print("Best fitness obtained: ", self.best_fitness)
 
     def visualize_routes(self):
-        visualize_tsp('simulated annealing', self.route)
+        visualize_tsp('simulated annealing TSP', self.route)
 
     def plot_learning(self):
+        fig = plt.figure(1)
         plt.plot([i for i in range(len(self.progress))], self.progress)
-        plt.ylabel("Fitness")
-        plt.xlabel("Iteration")
-        plt.show()
+        plt.ylabel("Distance")
+        plt.xlabel("Iterations")
+        plt.show(block=False)
 
 
 if __name__ == "__main__":
     cities = read_cities(64)
     sa = SimAnneal(cities, stopping_iter=15000)
     sa.run()
-    sa.visualize_routes()
     sa.plot_learning()
+    sa.visualize_routes()

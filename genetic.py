@@ -87,8 +87,7 @@ class GeneticAlgorithm:
     def produce_child(parent1, parent2):
         gene_1 = random.randint(0, len(parent1))
         gene_2 = random.randint(0, len(parent1))
-        gene_1 = min(gene_1, gene_2)
-        gene_2 = max(gene_1, gene_2)
+        gene_1, gene_2 = min(gene_1, gene_2), max(gene_1, gene_2)
         child = [parent1[i] for i in range(gene_1, gene_2)]
         child.extend([gene for gene in parent2 if gene not in child])
         return child
